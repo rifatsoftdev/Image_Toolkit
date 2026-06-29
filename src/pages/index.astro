@@ -1,0 +1,845 @@
+---
+import Layout from '../layouts/Layout.astro';
+import logoImage from '../assets/logo.png';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<Layout>
+  <Header />
+
+  <!-- Main Workspace -->
+  <main>
+    <!-- Hero / Title -->
+    <section class="hero-section">
+      <h1 class="hero-title">Powerful Image Utilities, <span class="logo-accent">Simplified</span></h1>
+      <p class="hero-desc">Compress, convert, resize, crop, rotate, and strip metadata instantly. Secure, private, and lightning fast image tools directly in your browser.</p>
+    </section>
+
+    <!-- Upload Dropzone (Visible by Default) -->
+    <div id="upload-zone" class="glass-panel dropzone">
+      <div class="upload-icon">
+        <i class="fa-solid fa-cloud-arrow-up"></i>
+      </div>
+      <h2 class="upload-title">Drag & drop your image here</h2>
+      <p class="upload-info">or click to browse from your device</p>
+      <p class="upload-info" style="font-size: 0.75rem; opacity: 0.6;">Supports PNG, JPG, JPEG, WEBP up to 20MB</p>
+      <input type="file" id="file-input" class="file-input" accept="image/png, image/jpeg, image/jpg, image/webp" />
+    </div>
+
+    <!-- Active Workbench (Hidden until Uploaded) -->
+    <div id="workbench" class="workbench" style="display: none;">
+      <!-- Preview Column (Left) -->
+      <div class="preview-column">
+        <!-- Before / After Slider Panel -->
+        <div class="glass-panel" id="slider-panel">
+          <div class="panel-header">
+            <h3 class="panel-title">
+              <i class="fa-solid fa-images logo-accent"></i> Preview
+            </h3>
+            <span class="upload-info" id="preview-filename">image.png</span>
+          </div>
+          <div class="panel-body" style="padding: 1rem;">
+            <!-- Interactive Before/After Slider -->
+            <div class="slider-container" id="slider-container">
+              <!-- Before Image (Clipped overlay) -->
+              <div class="slider-img img-before" id="before-container">
+                <img id="img-before" src="" style="width: 100%; height: 100%; object-fit: contain;" />
+              </div>
+              <!-- After Image (Background) -->
+              <div class="slider-img img-after">
+                <img id="img-after" src="" style="width: 100%; height: 100%; object-fit: contain;" />
+              </div>
+              
+              <!-- Badges -->
+              <span class="slider-badge badge-before">Before</span>
+              <span class="slider-badge badge-after">After</span>
+
+              <!-- Slider Handle -->
+              <div class="slider-handle-line" id="slider-line" style="left: 50%;"></div>
+              <div class="slider-handle-button" id="slider-handle" style="left: 50%;">
+                <div class="slider-handle-arrows">
+                  <i class="fa-solid fa-chevron-left"></i>
+                  <i class="fa-solid fa-chevron-right"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- Crop Area container (hidden by default) -->
+            <div class="crop-container" id="crop-wrapper" style="display: none;">
+              <img id="crop-preview" class="crop-image" src="" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Image Info Card -->
+        <div class="glass-panel">
+          <div class="panel-header">
+            <h3 class="panel-title">
+              <i class="fa-solid fa-circle-info logo-accent"></i> Image Details
+            </h3>
+          </div>
+          <div class="panel-body">
+            <div class="details-list">
+              <div class="detail-item">
+                <div class="detail-label">Original Size</div>
+                <div class="detail-value" id="info-original-size">-</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Compressed / New Size</div>
+                <div class="detail-value" id="info-new-size">-</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Dimensions</div>
+                <div class="detail-value" id="info-dimensions">-</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Saved Space</div>
+                <div class="detail-value savings-highlight" id="info-savings">-</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls Column (Right) -->
+      <div class="control-column">
+        <!-- Tools Config Panel -->
+        <div class="glass-panel">
+          <div class="panel-header" style="border-bottom: none; padding-bottom: 0;">
+            <div class="tabs-container" style="width: 100%;">
+              <button class="tab-btn active" data-tab="compress">
+                <i class="fa-solid fa-file-contract"></i> Compress
+              </button>
+              <button class="tab-btn" data-tab="convert">
+                <i class="fa-solid fa-right-left"></i> Convert
+              </button>
+              <button class="tab-btn" data-tab="resize">
+                <i class="fa-solid fa-maximize"></i> Resize
+              </button>
+              <button class="tab-btn" data-tab="crop">
+                <i class="fa-solid fa-crop-simple"></i> Crop
+              </button>
+              <button class="tab-btn" data-tab="rotate">
+                <i class="fa-solid fa-rotate"></i> Rotate
+              </button>
+              <button class="tab-btn" data-tab="metadata">
+                <i class="fa-solid fa-shield-halved"></i> EXIF
+              </button>
+            </div>
+          </div>
+
+          <div class="panel-body" style="padding-top: 0.5rem;">
+            <!-- Form Elements -->
+            <form id="toolkit-form" onsubmit="event.preventDefault();">
+              
+              <!-- Tab 1: Compress -->
+              <div id="tab-compress" class="tool-content active">
+                <div class="form-group">
+                  <div class="form-label" style="display: flex; justify-content: space-between;">
+                    <span>Compression Quality</span>
+                    <span class="range-val" id="quality-val">80%</span>
+                  </div>
+                  <div class="range-slider">
+                    <input type="range" id="compress-quality" class="range-input" min="10" max="100" value="80" />
+                  </div>
+                  <p class="upload-info" style="margin-top: 0.5rem;">Lower quality produces smaller file sizes, but may introduce artifacts. Standard compression (80) is lossless to the human eye.</p>
+                </div>
+              </div>
+
+              <!-- Tab 2: Convert -->
+              <div id="tab-convert" class="tool-content">
+                <div class="form-group">
+                  <span class="form-label">Target Format</span>
+                  <div class="ratio-grid" id="convert-format-grid" style="grid-template-columns: repeat(4, 1fr);">
+                    <button type="button" class="ratio-btn active" data-format="png">PNG</button>
+                    <button type="button" class="ratio-btn" data-format="jpg">JPG</button>
+                    <button type="button" class="ratio-btn" data-format="jpeg">JPEG</button>
+                    <button type="button" class="ratio-btn" data-format="webp">WEBP</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tab 3: Resize -->
+              <div id="tab-resize" class="tool-content">
+                <div class="form-grid-2 form-group">
+                  <div class="form-group">
+                    <label class="form-label" for="resize-width">Width (px)</label>
+                    <input type="number" id="resize-width" class="form-input" placeholder="Auto" min="1" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="resize-height">Height (px)</label>
+                    <input type="number" id="resize-height" class="form-input" placeholder="Auto" min="1" />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="resize-aspect" class="checkbox-input" checked />
+                    Maintain aspect ratio
+                  </label>
+                </div>
+              </div>
+
+              <!-- Tab 4: Crop -->
+              <div id="tab-crop" class="tool-content">
+                <div class="form-group">
+                  <span class="form-label">Crop Aspect Ratio</span>
+                  <div class="ratio-grid">
+                    <button type="button" class="ratio-btn active" data-ratio="NaN">Free</button>
+                    <button type="button" class="ratio-btn" data-ratio="1">1:1</button>
+                    <button type="button" class="ratio-btn" data-ratio="1.33333333333">4:3</button>
+                    <button type="button" class="ratio-btn" data-ratio="1.77777777778">16:9</button>
+                    <button type="button" class="ratio-btn" data-ratio="0.5625">9:16</button>
+                  </div>
+                </div>
+                <p class="upload-info">Drag the handles on the preview area to select your crop region.</p>
+              </div>
+
+              <!-- Tab 5: Rotate & Flip -->
+              <div id="tab-rotate" class="tool-content">
+                <div class="form-group">
+                  <span class="form-label">Rotate Angle</span>
+                  <div class="transform-grid">
+                    <button type="button" class="transform-btn" data-rotate="90">
+                      <i class="fa-solid fa-rotate-right"></i>
+                      <span>90° CW</span>
+                    </button>
+                    <button type="button" class="transform-btn" data-rotate="180">
+                      <i class="fa-solid fa-arrows-spin"></i>
+                      <span>180°</span>
+                    </button>
+                    <button type="button" class="transform-btn" data-rotate="270">
+                      <i class="fa-solid fa-rotate-left"></i>
+                      <span>90° CCW</span>
+                    </button>
+                  </div>
+                </div>
+                <div class="form-group form-grid-2">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="flip-horizontal" class="checkbox-input" />
+                    Flip Horizontal
+                  </label>
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="flip-vertical" class="checkbox-input" />
+                    Flip Vertical
+                  </label>
+                </div>
+              </div>
+
+              <!-- Tab 6: Remove Metadata -->
+              <div id="tab-metadata" class="tool-content">
+                <div class="form-group" style="text-align: center; padding: 1rem 0;">
+                  <div style="font-size: 3rem; color: var(--warning); margin-bottom: 1rem;">
+                    <i class="fa-solid fa-shield-halved"></i>
+                  </div>
+                  <h4 style="margin-bottom: 0.5rem;">Remove EXIF Data</h4>
+                  <p class="upload-info" style="max-width: 300px; margin: 0 auto;">Stripping EXIF data removes GPS coordinates, camera model, date taken, and other private metadata from the file.</p>
+                </div>
+              </div>
+
+              <!-- Run Action Button -->
+              <div class="form-group" style="margin-top: 1.5rem;">
+                <button type="button" id="process-btn" class="action-btn">
+                  <i class="fa-solid fa-gears"></i> Process Image
+                </button>
+              </div>
+
+              <!-- Start Over Button -->
+              <div class="form-group" style="text-align: center;">
+                <button type="button" id="reset-workspace-btn" class="reset-btn">
+                  <i class="fa-solid fa-arrow-rotate-left"></i> Upload Different Image
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Download result card (Hidden initially, shown after API response) -->
+        <div id="download-result-card" class="download-card" style="display: none;">
+          <div class="download-info">
+            <div class="download-success-icon">
+              <i class="fa-solid fa-check"></i>
+            </div>
+            <div>
+              <div class="download-title-text">Success!</div>
+              <div class="download-desc-text">Your processed image is ready.</div>
+            </div>
+          </div>
+          <a id="download-anchor" href="#" download class="download-btn">
+            <i class="fa-solid fa-download"></i> Download
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Loader Overlay -->
+  <div id="loader-overlay" class="loader-overlay">
+    <div class="spinner"></div>
+    <div class="loader-text" id="loader-text">Uploading image...</div>
+    <div class="progress-container">
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast">
+    <i class="fa-solid fa-triangle-exclamation" style="font-size: 1.25rem;"></i>
+    <span id="toast-message">An error occurred.</span>
+  </div>
+
+  <Footer />
+</Layout>
+
+<script>
+  import Cropper from 'cropperjs';
+  import 'cropperjs/dist/cropper.css';
+
+  // Config
+  const API_BASE = window.location.port === '4321' ? 'http://127.0.0.1:8000' : '';
+
+  // Elements
+  const uploadZone = document.getElementById('upload-zone');
+  const fileInput = document.getElementById('file-input');
+  const workbench = document.getElementById('workbench');
+  
+  // Images
+  const imgBefore = document.getElementById('img-before');
+  const imgAfter = document.getElementById('img-after');
+  const cropPreview = document.getElementById('crop-preview');
+  
+  // Columns & Wrappers
+  const sliderContainer = document.getElementById('slider-container');
+  const cropWrapper = document.getElementById('crop-wrapper');
+  const previewFilename = document.getElementById('preview-filename');
+
+  // Sliders
+  const beforeContainer = document.getElementById('before-container');
+  const sliderLine = document.getElementById('slider-line');
+  const sliderHandle = document.getElementById('slider-handle');
+
+  // Details
+  const infoOriginalSize = document.getElementById('info-original-size');
+  const infoNewSize = document.getElementById('info-new-size');
+  const infoDimensions = document.getElementById('info-dimensions');
+  const infoSavings = document.getElementById('info-savings');
+
+  // Interactive buttons & tools
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  const toolContents = document.querySelectorAll('.tool-content');
+  const ratioBtns = document.querySelectorAll('.ratio-btn');
+  const transformBtns = document.querySelectorAll('.transform-btn');
+  
+  const compressQuality = document.getElementById('compress-quality');
+  const qualityVal = document.getElementById('quality-val');
+  const resizeWidth = document.getElementById('resize-width');
+  const resizeHeight = document.getElementById('resize-height');
+  const resizeAspect = document.getElementById('resize-aspect');
+  const flipHorizontal = document.getElementById('flip-horizontal');
+  const flipVertical = document.getElementById('flip-vertical');
+
+  const processBtn = document.getElementById('process-btn');
+  const resetWorkspaceBtn = document.getElementById('reset-workspace-btn');
+  const downloadResultCard = document.getElementById('download-result-card');
+  const downloadAnchor = document.getElementById('download-anchor');
+
+  // Loader & Toast
+  const loaderOverlay = document.getElementById('loader-overlay');
+  const loaderText = document.getElementById('loader-text');
+  const progressBar = document.getElementById('progress-bar');
+  const toast = document.getElementById('toast');
+  const toastMessage = document.getElementById('toast-message');
+
+  // State Variables
+  let currentFile = null;
+  let activeTab = 'compress';
+  let activeConvertFormat = 'png';
+  let activeCropRatio = NaN;
+  let activeRotate = 0;
+  let cropperInstance = null;
+  let isDraggingSlider = false;
+
+  // Initialize event listeners
+  setupDragAndDrop();
+  setupTabs();
+  setupSliders();
+  setupForms();
+
+  // 1. Drag and Drop events
+  function setupDragAndDrop() {
+    uploadZone.addEventListener('click', () => fileInput.click());
+    
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadZone.classList.add('dragover');
+    });
+
+    uploadZone.addEventListener('dragleave', () => {
+      uploadZone.classList.remove('dragover');
+    });
+
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleFileSelect(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleFileSelect(e.target.files[0]);
+      }
+    });
+  }
+
+  // Handle uploaded file
+  function handleFileSelect(file) {
+    // Check validation limits
+    const allowedExtensions = ['png', 'jpg', 'jpeg', 'webp'];
+    const ext = file.name.split('.').pop().toLowerCase();
+    
+    if (!allowedExtensions.includes(ext)) {
+      showToast(`Unsupported file format .${ext}. Please upload PNG, JPG, or WEBP.`);
+      return;
+    }
+
+    if (file.size > 20 * 1024 * 1024) {
+      showToast("File is too large. Maximum upload size is 20MB.");
+      return;
+    }
+
+    currentFile = file;
+
+    // Load file reader for local preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const src = e.target.result;
+      imgBefore.src = src;
+      imgAfter.src = src; // Initially set both to before image
+      cropPreview.src = src;
+      
+      // Update Filename text
+      previewFilename.textContent = file.name;
+      
+      // Set details
+      infoOriginalSize.textContent = formatBytes(file.size);
+      infoNewSize.textContent = "-";
+      infoSavings.textContent = "-";
+      
+      // Get dimensions by creating an in-memory image
+      const tempImg = new Image();
+      tempImg.onload = () => {
+        infoDimensions.textContent = `${tempImg.width} x ${tempImg.height} px`;
+        // Pre-fill Resizer forms
+        resizeWidth.value = tempImg.width;
+        resizeHeight.value = tempImg.height;
+        resizeWidth.dataset.origWidth = tempImg.width;
+        resizeHeight.dataset.origHeight = tempImg.height;
+      };
+      tempImg.src = src;
+
+      // Show workbench, hide upload
+      uploadZone.style.display = 'none';
+      workbench.style.display = 'grid';
+      downloadResultCard.style.display = 'none';
+      
+      // Switch back to compress tab
+      switchTab('compress');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // 2. Tab switching logic
+  function setupTabs() {
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        switchTab(tab);
+      });
+    });
+  }
+
+  function switchTab(tab) {
+    activeTab = tab;
+
+    // Update active tab buttons
+    tabBtns.forEach(btn => {
+      if (btn.dataset.tab === tab) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    // Update visible forms
+    toolContents.forEach(content => {
+      if (content.id === `tab-${tab}`) {
+        content.classList.add('active');
+      } else {
+        content.classList.remove('active');
+      }
+    });
+
+    // Adjust preview window context (Cropper vs Before/After Slider)
+    if (tab === 'crop') {
+      // Hide Slider, Show Cropper
+      sliderContainer.style.display = 'none';
+      cropWrapper.style.display = 'flex';
+      initCropper();
+    } else {
+      // Hide Cropper, Show Slider
+      destroyCropper();
+      cropWrapper.style.display = 'none';
+      sliderContainer.style.display = 'flex';
+    }
+
+    // Update CTA button label based on tab
+    const actionLabel = {
+      compress: '<i class="fa-solid fa-file-contract"></i> Compress Image',
+      convert: '<i class="fa-solid fa-right-left"></i> Convert Image',
+      resize: '<i class="fa-solid fa-maximize"></i> Resize Image',
+      crop: '<i class="fa-solid fa-crop-simple"></i> Crop Image',
+      rotate: '<i class="fa-solid fa-rotate"></i> Rotate & Flip',
+      metadata: '<i class="fa-solid fa-shield-halved"></i> Remove EXIF Metadata'
+    };
+    processBtn.innerHTML = actionLabel[tab] || 'Process Image';
+  }
+
+  // 3. Cropper.js initialization and configuration
+  function initCropper() {
+    if (cropperInstance) return;
+    
+    // Initialize cropper with active aspect ratio settings
+    cropperInstance = new Cropper(cropPreview, {
+      aspectRatio: activeCropRatio,
+      viewMode: 1,
+      autoCropArea: 0.8,
+      responsive: true,
+      background: false,
+      ready() {
+        // Adjust container size if needed
+      }
+    });
+  }
+
+  function destroyCropper() {
+    if (cropperInstance) {
+      cropperInstance.destroy();
+      cropperInstance = null;
+    }
+  }
+
+  // Ratio and format selection grids
+  function setupForms() {
+    // Convert format selections
+    const formatBtns = document.querySelectorAll('#convert-format-grid .ratio-btn');
+    formatBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        formatBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeConvertFormat = btn.dataset.format;
+      });
+    });
+
+    // Crop Aspect ratios
+    ratioBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        ratioBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeCropRatio = parseFloat(btn.dataset.ratio);
+        
+        if (cropperInstance) {
+          cropperInstance.setAspectRatio(activeCropRatio);
+        }
+      });
+    });
+
+    // Rotate selection
+    transformBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const val = parseInt(btn.dataset.rotate);
+        if (activeRotate === val) {
+          // Toggle off
+          btn.classList.remove('active');
+          activeRotate = 0;
+        } else {
+          transformBtns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          activeRotate = val;
+        }
+      });
+    });
+
+    // Compress quality slider updates
+    compressQuality.addEventListener('input', (e) => {
+      qualityVal.textContent = `${e.target.value}%`;
+    });
+
+    // Aspect ratio preservation for Resizer
+    resizeWidth.addEventListener('input', () => {
+      if (resizeAspect.checked && resizeWidth.value) {
+        const origW = parseFloat(resizeWidth.dataset.origWidth);
+        const origH = parseFloat(resizeHeight.dataset.origHeight);
+        resizeHeight.value = Math.round((parseFloat(resizeWidth.value) / origW) * origH);
+      }
+    });
+
+    resizeHeight.addEventListener('input', () => {
+      if (resizeAspect.checked && resizeHeight.value) {
+        const origW = parseFloat(resizeWidth.dataset.origWidth);
+        const origH = parseFloat(resizeHeight.dataset.origHeight);
+        resizeWidth.value = Math.round((parseFloat(resizeHeight.value) / origH) * origW);
+      }
+    });
+
+    // Process submission click
+    processBtn.addEventListener('click', processImage);
+
+    // Reset workspace completely
+    resetWorkspaceBtn.addEventListener('click', resetWorkspace);
+  }
+
+  // 4. Before/After slider drag and responsive coordinate logic
+  function setupSliders() {
+    const handleMove = (clientX) => {
+      const rect = sliderContainer.getBoundingClientRect();
+      const x = clientX - rect.left;
+      let pct = (x / rect.width) * 100;
+      
+      // Constrain percentage between 0 and 100
+      pct = Math.max(0, Math.min(pct, 100));
+      
+      // Update visual styles
+      sliderContainer.style.setProperty('--slider-pos', `${pct}%`);
+      sliderLine.style.left = `${pct}%`;
+      sliderHandle.style.left = `${pct}%`;
+    };
+
+    const onMouseDown = (e) => {
+      isDraggingSlider = true;
+      e.preventDefault();
+    };
+
+    const onTouchStart = (e) => {
+      isDraggingSlider = true;
+    };
+
+    sliderHandle.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mouseup', () => isDraggingSlider = false);
+    
+    window.addEventListener('mousemove', (e) => {
+      if (!isDraggingSlider) return;
+      handleMove(e.clientX);
+    });
+
+    // Touch events for mobile compatibility
+    sliderHandle.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchend', () => isDraggingSlider = false);
+    
+    window.addEventListener('touchmove', (e) => {
+      if (!isDraggingSlider) return;
+      if (e.touches && e.touches[0]) {
+        handleMove(e.touches[0].clientX);
+      }
+    }, { passive: true });
+
+    // Also support clicking anywhere on the slider container to move it
+    sliderContainer.addEventListener('click', (e) => {
+      // Don't trigger if they clicked the handle button itself
+      if (e.target.closest('#slider-handle')) return;
+      handleMove(e.clientX);
+    });
+  }
+
+  // 5. Image Processing API Submissions
+  async function processImage() {
+    if (!currentFile) return;
+
+    const formData = new FormData();
+    formData.append('file', currentFile);
+
+    let endpoint = '';
+    
+    // Append fields based on selected tab
+    switch (activeTab) {
+      case 'compress':
+        endpoint = '/api/image/compress';
+        formData.append('quality', compressQuality.value);
+        break;
+
+      case 'convert':
+        endpoint = '/api/image/convert';
+        formData.append('target_format', activeConvertFormat);
+        break;
+
+      case 'resize':
+        endpoint = '/api/image/resize';
+        if (resizeWidth.value) formData.append('width', resizeWidth.value);
+        if (resizeHeight.value) formData.append('height', resizeHeight.value);
+        formData.append('maintain_aspect_ratio', resizeAspect.checked);
+        break;
+
+      case 'crop':
+        if (!cropperInstance) {
+          showToast("Cropper is not active. Please reload.");
+          return;
+        }
+        endpoint = '/api/image/crop';
+        // Get integer crop values relative to original image size
+        const cropData = cropperInstance.getData(true);
+        formData.append('x', cropData.x);
+        formData.append('y', cropData.y);
+        formData.append('width', cropData.width);
+        formData.append('height', cropData.height);
+        break;
+
+      case 'rotate':
+        endpoint = '/api/image/rotate';
+        formData.append('rotate', activeRotate);
+        formData.append('flip_h', flipHorizontal.checked);
+        formData.append('flip_v', flipVertical.checked);
+        break;
+
+      case 'metadata':
+        endpoint = '/api/image/remove-metadata';
+        break;
+
+      default:
+        showToast("Invalid operation selected.");
+        return;
+    }
+
+    // Trigger loader screen
+    showLoader("Processing image...");
+
+    try {
+      const response = await fetch(`${API_BASE}${endpoint}`, {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        showToast(data.message || "An error occurred while processing the image.");
+        hideLoader();
+        return;
+      }
+
+      // Successful response. Update view.
+      hideLoader();
+      
+      // Update details panel
+      infoNewSize.textContent = formatBytes(data.image.size);
+      infoDimensions.textContent = `${data.image.width} x ${data.image.height} px`;
+      
+      // Calculate and display savings percentage
+      const originalSize = currentFile.size;
+      const newSize = data.image.size;
+      if (newSize < originalSize) {
+        const savingsPct = Math.round(((originalSize - newSize) / originalSize) * 100);
+        infoSavings.textContent = `${savingsPct}% Saved`;
+      } else {
+        infoSavings.textContent = "0% (Quality/Format modified)";
+      }
+
+      // Update AFTER preview image path
+      const resultUrl = `${API_BASE}${data.download_url}`;
+      imgAfter.src = resultUrl;
+
+      // Show download card
+      downloadAnchor.href = resultUrl;
+      downloadAnchor.setAttribute('download', data.image.filename);
+      downloadResultCard.style.display = 'flex';
+
+      // Snap slider handle to 50% so they can see the comparison immediately
+      sliderContainer.style.setProperty('--slider-pos', '50%');
+      sliderLine.style.left = '50%';
+      sliderHandle.style.left = '50%';
+
+      // Smooth scroll down to result card if mobile
+      if (window.innerWidth < 900) {
+        downloadResultCard.scrollIntoView({ behavior: 'smooth' });
+      }
+
+      // If we were on crop tab, auto-switch to compress or general preview slider to show results
+      if (activeTab === 'crop') {
+        switchTab('compress');
+      }
+
+    } catch (err) {
+      console.error(err);
+      showToast("Network error. Make sure the backend server is running.");
+      hideLoader();
+    }
+  }
+
+  // Reset workbench to upload zone
+  function resetWorkspace() {
+    destroyCropper();
+    currentFile = null;
+    fileInput.value = '';
+    
+    // Clear images
+    imgBefore.src = '';
+    imgAfter.src = '';
+    cropPreview.src = '';
+
+    // Swap view display
+    workbench.style.display = 'none';
+    uploadZone.style.display = 'flex';
+  }
+
+  // 6. UI Helpers (Toasts, Loader progress bar, size formatters)
+  function showToast(msg) {
+    toastMessage.textContent = msg;
+    toast.classList.add('active');
+    
+    // Auto-dismiss after 4 seconds
+    setTimeout(() => {
+      toast.classList.remove('active');
+    }, 4000);
+  }
+
+  function showLoader(txt) {
+    loaderText.textContent = txt;
+    loaderOverlay.classList.add('active');
+    
+    // Simulate loading progress bar
+    let progress = 0;
+    progressBar.style.width = '0%';
+    
+    const interval = setInterval(() => {
+      if (progress >= 90) {
+        clearInterval(interval);
+      } else {
+        progress += (100 - progress) * 0.15; // slow down close to 90%
+        progressBar.style.width = `${Math.round(progress)}%`;
+      }
+    }, 100);
+
+    // Attach interval to loader object for clearing
+    loaderOverlay.dataset.intervalId = interval;
+  }
+
+  function hideLoader() {
+    const intervalId = loaderOverlay.dataset.intervalId;
+    if (intervalId) clearInterval(intervalId);
+    
+    // Snap progress to 100% and close
+    progressBar.style.width = '100%';
+    setTimeout(() => {
+      loaderOverlay.classList.remove('active');
+    }, 200);
+  }
+
+  function formatBytes(bytes, decimals = 2) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+  }
+</script>
